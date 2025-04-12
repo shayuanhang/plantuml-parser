@@ -1,3 +1,14 @@
+buildscript {
+    repositories {
+        maven { url "https://maven.aliyun.com/repository/public" }
+        maven { url "https://maven.aliyun.com/repository/google" }
+        maven { url "https://maven.aliyun.com/repository/gradle-plugin" }
+        // 默认仓库放在最后
+//        google()
+        mavenCentral()
+    }
+}
+
 plugins {
     id 'java'
     id 'org.jetbrains.intellij' version '0.6.5'
@@ -9,7 +20,6 @@ version '0.0.9'
 repositories {
     mavenCentral()
 }
-
 dependencies {
     implementation (project(path: ":plantuml-parser-core")) {
         exclude (group: 'org.jetbrains.kotlin', module: 'kotlin-compiler')

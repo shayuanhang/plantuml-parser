@@ -1,3 +1,14 @@
+buildscript {
+    repositories {
+        maven { url "https://maven.aliyun.com/repository/public" }
+        maven { url "https://maven.aliyun.com/repository/google" }
+        maven { url "https://maven.aliyun.com/repository/gradle-plugin" }
+        // 默认仓库放在最后
+//        google()
+        mavenCentral()
+    }
+}
+
 plugins {
     id 'java'
 }
@@ -11,7 +22,16 @@ targetCompatibility = 1.8
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
-
+allprojects {
+    repositories {
+        maven { url "https://maven.aliyun.com/repository/public" }
+        maven { url "https://maven.aliyun.com/repository/google" }
+        maven { url "https://maven.aliyun.com/repository/jcenter" }
+        // 默认仓库放在最后
+//        google()
+        mavenCentral()
+    }
+}
 repositories {
     mavenCentral()
 }

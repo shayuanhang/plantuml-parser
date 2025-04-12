@@ -48,9 +48,19 @@
     <idea-version since-build="163.0"/>
 
     <actions>
-        <action class="com.shuzijun.plantumlparser.plugin.action.ParserProgramAction" id="parserProgramAction"
-                text="PlantUML Parser" description="Generate PumL through the original code">
+        <group
+                id="parserProgramAction.GroupedActions"
+                text="PlantUML Parser"
+                popup="true"
+               >
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
-        </action>
+            <action class="com.shuzijun.plantumlparser.plugin.action.PlantumlAddAction" id="parserProgramAction.add"
+                    text="Add" description="Add selected class file">
+            </action>
+            <action class="com.shuzijun.plantumlparser.plugin.action.ParserProgramAction" id="parserProgramAction.parse"
+                    text="Parser" description="Generate PumL through the original code">
+            </action>
+        </group>
+
     </actions>
 </idea-plugin>

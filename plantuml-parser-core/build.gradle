@@ -8,15 +8,13 @@ group 'com.shuzijun'
 archivesBaseName = 'plantuml-parser-core'
 version '0.0.10'
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     api "com.github.javaparser:javaparser-core:3.25.3"
-
+    api "org.benf:cfr:0.152"
     api "commons-io:commons-io:2.8.0"
     api "org.jetbrains.kotlin:kotlin-compiler"
+    api "org.javassist:javassist:3.29.2-GA"
+    api "org.benf:cfr:0.152"
 }
 
 tasks.withType(JavaCompile) {

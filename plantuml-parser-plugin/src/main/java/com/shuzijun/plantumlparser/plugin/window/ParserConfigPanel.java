@@ -7,7 +7,9 @@ import com.intellij.openapi.fileChooser.PathChooserDialog;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.DocumentAdapter;
+import com.shuzijun.plantumlparser.plugin.utils.DataSource;
 import com.shuzijun.plantumlparser.plugin.utils.PropertiesUtils;
+import com.shuzijun.plantumlparser.plugin.utils.SimpleDataSource;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -16,6 +18,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 解析配置
@@ -44,6 +47,9 @@ public class ParserConfigPanel {
     private JButton chooseFilePath;
     private JCheckBox commentCheckBox;
     private JTextField excludeClass;
+    private JList classNameList;
+    private JButton delClassBtn;
+    private JButton clearClassBtn;
     private PathChooserDialog pathChooserDialog;
 
     public ParserConfigPanel(Project project) {
@@ -77,6 +83,27 @@ public class ParserConfigPanel {
                         filePath.setText(fileDirectory.getText() + File.separator + fileName.getText() + ".puml");
                     }
                 });
+            }
+        });
+        delClassBtn.addMouseListener(new MouseAdapter() {
+            private DataSource dataSource = DataSource.getInstance();
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                Object selectedValue = classNameList.getSelectedValue();
+                dataSource.del((String) selectedValue);
+                MyListModel model = (MyListModel) classNameList.getModel();
+                model.flush();
+                classNameList.updateUI();
+            }
+        });
+        clearClassBtn.addMouseListener(new MouseAdapter() {
+            private DataSource dataSource = DataSource.getInstance();
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                dataSource.clear();
+                MyListModel model = (MyListModel) classNameList.getModel();
+                model.flush();
+                classNameList.updateUI();
             }
         });
     }
@@ -151,5 +178,28 @@ public class ParserConfigPanel {
             return new ArrayList<>();
         }
         return Arrays.asList(excludeClass.getText().trim().split(","));
+    }
+
+    private void createUIComponents() {
+        // TODO: place custom component creation code here
+        ListModel<String> bigData = new MyListModel();
+        this.classNameList= new JList(bigData);
+    }
+
+    class MyListModel extends AbstractListModel {
+
+        DataSource dataSource=DataSource.getInstance();
+        List<String> keys = new ArrayList<>();
+        {
+            flush();
+        }
+        public int getSize() { return keys.size(); }
+        public String getElementAt(int index) { return keys.get(index); }
+
+        public void flush() {
+            List<String> collect = dataSource.getAllData().keySet().stream().sorted().collect(Collectors.toList());
+            keys.clear();
+            keys.addAll(collect);
+        }
     }
 }
