@@ -45,22 +45,11 @@ public class ParserProgramAction extends AnAction {
         MTAUtils.click(e.getActionManager().getId(this));
         ParserConfig parserConfig = new ParserConfig();
         VirtualFile[] virtualFiles = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
-
-        List<String> pathList = new ArrayList<>();
-        for (VirtualFile virtualFile : virtualFiles) {
-            String path = virtualFile.getPath();
-            File file = new File(path);
-            if (!file.exists()) {
-                return;
-            } else if (file.isDirectory()) {
-                Collection<File> files = FileUtils.listFiles(file, new String[]{"java","kt"}, Boolean.TRUE);
-                files.forEach(fileTemp -> pathList.add(fileTemp.getPath()));
-            } else if (path.endsWith("java") || path.endsWith("kt")) {
-                pathList.add(file.getPath());
-            }
+        try {
+            PlantumlAddAction.add(virtualFiles);
+        } catch (Exception exception) {
+            Notifications.Bus.notify(new Notification("plantuml-parser", "", exception.getMessage(), NotificationType.WARNING), e.getProject());
         }
-        DataSourceUtils.parseClassNameFromJavaFilesAndStore(pathList);
-
 
         if ( dataSource.getAllData().isEmpty()) {
             Notifications.Bus.notify(new Notification("plantuml-parser", "", PropertiesUtils.getInfo("select.empty"), NotificationType.WARNING), e.getProject());

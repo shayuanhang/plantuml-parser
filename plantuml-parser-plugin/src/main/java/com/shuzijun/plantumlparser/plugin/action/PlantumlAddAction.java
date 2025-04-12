@@ -14,8 +14,6 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.shuzijun.plantumlparser.plugin.utils.DataSource;
 import com.shuzijun.plantumlparser.plugin.utils.DataSourceUtils;
 import com.shuzijun.plantumlparser.plugin.utils.PropertiesUtils;
-import com.shuzijun.plantumlparser.plugin.utils.SimpleDataSource;
-import org.benf.cfr.reader.Main;
 import org.benf.cfr.reader.api.CfrDriver;
 import org.benf.cfr.reader.api.OutputSinkFactory;
 import org.benf.cfr.reader.api.SinkReturns;
@@ -34,24 +32,53 @@ public class PlantumlAddAction extends AnAction {
     public void actionPerformed(@NotNull AnActionEvent e) {
         try {
             VirtualFile[] virtualFiles = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
-            List<String> addPaths = new ArrayList<>();
-            // 如果是JAVA源码，直接加入addPaths
-            Arrays.stream(virtualFiles).filter(vf -> vf.getPath().endsWith(".java")).forEach(vf -> addPaths.add(vf.getPath()));
-            // 处理选的是从jar包中的class文件
-            List<VirtualFile> classVfs = Arrays.stream(virtualFiles).filter(vf -> vf.getPath().endsWith(".class") && vf.getPath().contains("!/")).collect(Collectors.toList());
-            addPaths.addAll(getJavaFilePathFromClassFile(classVfs));
-            if (addPaths.size() == 0) {
-                throw new RuntimeException(PropertiesUtils.getInfo("select.empty"));
-            }
-            // 储存选中数据
-            DataSourceUtils.parseClassNameFromJavaFilesAndStore(addPaths);
+            add(virtualFiles);
         } catch (Exception exception) {
             Notifications.Bus.notify(new Notification("plantuml-parser", "", exception.getMessage(), NotificationType.WARNING), e.getProject());
         }
 
     }
 
-    private List<String> getJavaFilePathFromClassFile(List<VirtualFile> classVfs) {
+    public static void add(VirtualFile[] virtualFiles) {
+
+        List<String> addPaths = new ArrayList<>();
+        List<VirtualFile> classVfs = new ArrayList<>();
+        // 如果是JAVA源码，直接加入addPaths
+        for (VirtualFile virtualFile : virtualFiles) {
+            File file = new File(virtualFile.getPath());
+            if (file.exists()) {
+                if (file.isDirectory()){
+                    for (VirtualFile child : virtualFile.getChildren()) {
+                        if (!child.isDirectory()&&child.getPath().endsWith(".java")) {
+                            addPaths.add(child.getPath());
+                        }
+                    }
+                }else {
+                    if (virtualFile.getPath().endsWith(".java")) {
+                        addPaths.add(virtualFile.getPath());
+                    }
+                }
+            } else {
+                // vfs
+                if (virtualFile.isDirectory()) {
+                    List<VirtualFile> collect = Arrays.stream(virtualFile.getChildren()).filter(vf -> !vf.isDirectory() && vf.getPath().endsWith(".class")).collect(Collectors.toList());
+                    classVfs.addAll(collect);
+                } else if (virtualFile.getPath().endsWith(".class")){
+                    classVfs.add(virtualFile);
+                }
+            }
+        }
+        // 处理选的是从jar包中的class文件
+        addPaths.addAll(getJavaFilePathFromClassFile(classVfs));
+        if (addPaths.size() == 0) {
+            throw new RuntimeException(PropertiesUtils.getInfo("select.empty"));
+        }
+        // 储存选中数据
+        DataSourceUtils.parseClassNameFromJavaFilesAndStore(addPaths);
+
+    }
+
+    private static List<String> getJavaFilePathFromClassFile(List<VirtualFile> classVfs) {
         if (classVfs.size() == 0) {
             return new ArrayList<>();
         }
@@ -99,7 +126,7 @@ public class PlantumlAddAction extends AnAction {
      * @param virtualFile
      * @return
      */
-    private String getGenFileName(VirtualFile virtualFile) {
+    private static String getGenFileName(VirtualFile virtualFile) {
         String path = virtualFile.getPath();
         if (!path.endsWith(".class")) {
             throw new RuntimeException("not support this file type[" + path.substring(path.lastIndexOf(".")) + "]!");
@@ -147,7 +174,7 @@ public class PlantumlAddAction extends AnAction {
         }
     }
 
-    static class CustomOutputSinkFactory implements OutputSinkFactory{
+    static class CustomOutputSinkFactory implements OutputSinkFactory {
         private List<String> javaPaths = new ArrayList<>();
 
         public List<String> getJavaPaths() {
@@ -168,19 +195,20 @@ public class PlantumlAddAction extends AnAction {
             if (sinkClass == SinkClass.DECOMPILED) {
                 return x -> dumpDecompiled.accept((SinkReturns.Decompiled) x);
             }
-            return ignore -> {};
+            return ignore -> {
+            };
         }
 
         public String genJavaPath(String packageName, String className) {
-            return TMP_DIR_PATH+File.separator+packageName.replace(".","_")+"_"+className+".java"        ;
+            return TMP_DIR_PATH + File.separator + packageName.replace(".", "_") + "_" + className + ".java";
         }
+
         Consumer<SinkReturns.Decompiled> dumpDecompiled = d -> {
             String javaPath = genJavaPath(d.getPackageName(), d.getClassName());
             File javaFile = new File(javaPath);
-            try (BufferedWriter bw=new BufferedWriter(new FileWriter(javaFile)))
-            {
-              bw.write(d.getJava());
-              this.javaPaths.add(javaPath);
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter(javaFile))) {
+                bw.write(d.getJava());
+                this.javaPaths.add(javaPath);
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
