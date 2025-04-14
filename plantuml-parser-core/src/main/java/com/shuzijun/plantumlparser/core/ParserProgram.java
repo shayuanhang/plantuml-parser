@@ -34,23 +34,24 @@ public class ParserProgram {
         }else {
             StaticJavaParser.getConfiguration().setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_8);
         }
-        Set<File> files = this.parserConfig.getFilePaths();
 
+        Set<Code> codeSet = this.parserConfig.getCodeSet();
         PUmlView pUmlView = new PUmlView();
-        for (File file : files) {
-            if (file.getPath().endsWith("java")){
-                CompilationUnit compilationUnit = StaticJavaParser.parse(file);
+        for (Code code : codeSet) {
+            if (Code.Type.JAVA.equals(code.getType())) {
+                CompilationUnit compilationUnit = StaticJavaParser.parse(code.getCode());
                 Optional<PackageDeclaration> packageDeclaration = compilationUnit.getPackageDeclaration();
                 VoidVisitor<PUml> classNameCollector = new ClassVoidVisitor(packageDeclaration.isPresent() ? packageDeclaration.get().getNameAsString() : "", parserConfig);
                 classNameCollector.visit(compilationUnit, pUmlView);
-            } else if (file.getPath().endsWith("kt")){
+            } else if (Code.Type.KT.equals(code.getType())) {
                 try {
-                    KtParserProgram.execute(parserConfig,file,pUmlView);
+                    KtParserProgram.execute(parserConfig,code,pUmlView);
                 }catch (NoClassDefFoundError e){
                     throw new IOException("Environment not support kotlin");
                 }
             }
         }
+
 
         if (this.parserConfig.getOutFilePath() == null) {
             System.out.println(pUmlView);

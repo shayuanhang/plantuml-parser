@@ -20,9 +20,9 @@ import java.util.regex.PatternSyntaxException;
  */
 public class ParserConfig {
     /**
-     * 解析的文件路径
+     * 解析的文件源码
      */
-    private Map<String, File> fileMap = new HashMap<>();
+    private Set<Code> codeSet = new HashSet<>();
 
     /**
      * 输出文件路径
@@ -63,20 +63,11 @@ public class ParserConfig {
         this.outFilePath = outFilePath;
     }
 
-    public Set<File> getFilePaths() {
-        return new HashSet<>(fileMap.values());
+    public Set<Code> getCodeSet() {
+        return new HashSet<>(codeSet);
     }
-
-    public void addFilePath(String filePath) {
-        File file = new File(filePath);
-        if (!file.exists()) {
-            return;
-        } else if (file.isDirectory()) {
-            Collection<File> files = FileUtils.listFiles(file, new String[]{"java","kt"}, Boolean.TRUE);
-            files.forEach(fileTemp -> fileMap.put(fileTemp.getPath(), fileTemp));
-        } else if (filePath.endsWith("java") || filePath.endsWith("kt")) {
-            fileMap.put(file.getPath(), file);
-        }
+    public void addCode(Code code) {
+        codeSet.add(code);
     }
 
     public void addFieldModifier(String modifier) {
@@ -84,7 +75,7 @@ public class ParserConfig {
     }
 
     public boolean isFieldModifier(String modifier) {
-        if (fieldModifier.contains(Constant.VisibilityAll)){
+        if (fieldModifier.contains(Constant.VisibilityAll)) {
             return true;
         }
         return fieldModifier.contains(modifier);
@@ -95,7 +86,7 @@ public class ParserConfig {
     }
 
     public boolean isMethodModifier(String modifier) {
-        if (methodModifier.contains(Constant.VisibilityAll)){
+        if (methodModifier.contains(Constant.VisibilityAll)) {
             return true;
         }
         return methodModifier.contains(modifier);
@@ -148,16 +139,17 @@ public class ParserConfig {
     public void addExcludeClassRegex(String excludeClassRegex) {
         this.excludeClassRegex.add(excludeClassRegex);
     }
+
     public boolean isExcludeClass(String className) {
-        if(className == null || className.trim().length() == 0){
+        if (className == null || className.trim().length() == 0) {
             return false;
         }
         for (String regex : excludeClassRegex) {
             try {
-                if(className.matches(regex)){
+                if (className.matches(regex)) {
                     return true;
                 }
-            }catch (PatternSyntaxException ignore){
+            } catch (PatternSyntaxException ignore) {
             }
         }
         return false;

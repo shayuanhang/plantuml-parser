@@ -24,7 +24,7 @@ public class UmlGenerationTester {
         parserConfig.addMethodModifier("default");
         File file = new File(Objects.requireNonNull(
             UmlGenerationTester.class.getClassLoader().getResource(filename)).getFile());
-        parserConfig.addFilePath(file.getAbsolutePath());
+        parserConfig.addCode(new FileCode(file));
         return parserConfig;
     }
 

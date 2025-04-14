@@ -35,4 +35,22 @@ public class KtParserProgram {
         KtClassVOidVisitor ktClassVOidVisitor = new KtClassVOidVisitor(packageFqName.asString(),parserConfig);
         ((KtFile) ktFile).accept(ktClassVOidVisitor,pUmlView);
     }
+
+    public static void execute(ParserConfig parserConfig, Code code,PUmlView pUmlView) throws IOException {
+        if (parserConfig.getProject() == null) {
+            Disposable disposable = Disposer.newDisposable();
+            KotlinCoreEnvironment env = KotlinCoreEnvironment.createForProduction(
+                    disposable, new CompilerConfiguration(), EnvironmentConfigFiles.JVM_CONFIG_FILES);
+            parserConfig.setProject( env.getProject());
+
+        }
+
+        PsiFile ktFile = PsiFileFactory.getInstance(parserConfig.getProject()).createFileFromText(code.getName(), KotlinFileType.INSTANCE, code.getCode());
+        if (!(ktFile instanceof KtFile)) {
+            return;
+        }
+        FqName packageFqName =  ((KtFile)ktFile).getPackageFqName();
+        KtClassVOidVisitor ktClassVOidVisitor = new KtClassVOidVisitor(packageFqName.asString(),parserConfig);
+        ((KtFile) ktFile).accept(ktClassVOidVisitor,pUmlView);
+    }
 }

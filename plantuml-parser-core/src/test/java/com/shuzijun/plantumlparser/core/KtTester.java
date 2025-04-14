@@ -16,7 +16,7 @@ public class KtTester {
         String filePath = KtTester.class.getClassLoader().getResource("kt").getPath();
 
         ParserConfig parserConfig=new ParserConfig();
-        parserConfig.addFilePath(filePath);
+        parserConfig.addCode(new FileCode(filePath));
         parserConfig.setShowPackage(true);
         parserConfig.setShowComment(true);
         parserConfig.setShowConstructors(true);

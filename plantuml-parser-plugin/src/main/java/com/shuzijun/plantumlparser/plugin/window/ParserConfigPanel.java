@@ -7,9 +7,11 @@ import com.intellij.openapi.fileChooser.PathChooserDialog;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.DocumentAdapter;
-import com.shuzijun.plantumlparser.plugin.utils.DataSource;
+import com.shuzijun.plantumlparser.core.Code;
+import com.shuzijun.plantumlparser.plugin.utils.FQNResolver;
 import com.shuzijun.plantumlparser.plugin.utils.PropertiesUtils;
-import com.shuzijun.plantumlparser.plugin.utils.SimpleDataSource;
+import com.shuzijun.plantumlparser.plugin.utils.Store;
+import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -86,21 +88,28 @@ public class ParserConfigPanel {
             }
         });
         delClassBtn.addMouseListener(new MouseAdapter() {
-            private DataSource dataSource = DataSource.getInstance();
             @Override
             public void mouseClicked(MouseEvent e) {
                 Object selectedValue = classNameList.getSelectedValue();
-                dataSource.del((String) selectedValue);
-                MyListModel model = (MyListModel) classNameList.getModel();
-                model.flush();
-                classNameList.updateUI();
+                Store<Code> store = Store.getInstance();
+                Collection<Code> codeCollection =  store.getAllData();
+                FQNResolver fqnResolver = FQNResolver.getInstance();
+                for (Code code : codeCollection) {
+                    if (StringUtils.equals(fqnResolver.getFQN(code),selectedValue.toString())) {
+                        store.delete(code);
+                        MyListModel model = (MyListModel) classNameList.getModel();
+                        model.flush();
+                        classNameList.updateUI();
+                        break;
+                    }
+                }
             }
         });
         clearClassBtn.addMouseListener(new MouseAdapter() {
-            private DataSource dataSource = DataSource.getInstance();
             @Override
             public void mouseClicked(MouseEvent e) {
-                dataSource.clear();
+                Store<Code> store = Store.getInstance();
+                store.clear();
                 MyListModel model = (MyListModel) classNameList.getModel();
                 model.flush();
                 classNameList.updateUI();
@@ -188,7 +197,6 @@ public class ParserConfigPanel {
 
     class MyListModel extends AbstractListModel {
 
-        DataSource dataSource=DataSource.getInstance();
         List<String> keys = new ArrayList<>();
         {
             flush();
@@ -197,7 +205,9 @@ public class ParserConfigPanel {
         public String getElementAt(int index) { return keys.get(index); }
 
         public void flush() {
-            List<String> collect = dataSource.getAllData().keySet().stream().sorted().collect(Collectors.toList());
+            Store<Code> store = Store.getInstance();
+            FQNResolver fqnResolver = FQNResolver.getInstance();
+            List<String> collect = store.getAllData().stream().map(code-> fqnResolver.getFQN(code)).filter(fqn->StringUtils.isNotBlank(fqn)).collect(Collectors.toList());
             keys.clear();
             keys.addAll(collect);
         }

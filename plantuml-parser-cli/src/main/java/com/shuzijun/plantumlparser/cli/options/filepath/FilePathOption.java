@@ -1,6 +1,7 @@
 package com.shuzijun.plantumlparser.cli.options.filepath;
 
 import com.shuzijun.plantumlparser.cli.options.CliOption;
+import com.shuzijun.plantumlparser.core.FileCode;
 import com.shuzijun.plantumlparser.core.ParserConfig;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -23,7 +24,7 @@ public class FilePathOption implements CliOption {
                 .filter(option -> option.equalsIgnoreCase(this.optName))
                 .forEach(option -> {
                     final String path = cmd.getOptionValue(option);
-                    parserConfig.addFilePath(path);
+                    parserConfig.addCode(new FileCode(path));
                 });
         return parserConfig;
     }

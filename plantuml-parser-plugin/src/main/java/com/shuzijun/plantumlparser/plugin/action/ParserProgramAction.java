@@ -14,24 +14,23 @@ import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.ValidationInfo;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.tools.ToolsBundle;
+import com.shuzijun.plantumlparser.core.Code;
 import com.shuzijun.plantumlparser.core.ParserConfig;
 import com.shuzijun.plantumlparser.core.ParserProgram;
-import com.shuzijun.plantumlparser.plugin.utils.*;
+import com.shuzijun.plantumlparser.plugin.utils.CodeUtils;
+import com.shuzijun.plantumlparser.plugin.utils.MTAUtils;
+import com.shuzijun.plantumlparser.plugin.utils.PropertiesUtils;
+import com.shuzijun.plantumlparser.plugin.utils.Store;
 import com.shuzijun.plantumlparser.plugin.window.ParserConfigPanel;
-import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 解析动作
@@ -39,30 +38,32 @@ import java.util.Map;
  * @author shuzijun
  */
 public class ParserProgramAction extends AnAction {
-    private DataSource dataSource = DataSource.getInstance();
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
         MTAUtils.click(e.getActionManager().getId(this));
         ParserConfig parserConfig = new ParserConfig();
         VirtualFile[] virtualFiles = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
         try {
-            PlantumlAddAction.add(virtualFiles);
+            List<Code> codeList = CodeUtils.parse(virtualFiles);
+            Store.getInstance().addAll(codeList);
         } catch (Exception exception) {
             Notifications.Bus.notify(new Notification("plantuml-parser", "", exception.getMessage(), NotificationType.WARNING), e.getProject());
         }
 
-        if ( dataSource.getAllData().isEmpty()) {
+        Collection<Code> codeCollection = Store.getInstance().getAllData();
+        if (codeCollection.isEmpty()) {
             Notifications.Bus.notify(new Notification("plantuml-parser", "", PropertiesUtils.getInfo("select.empty"), NotificationType.WARNING), e.getProject());
             return;
         }
+
         ParserConfigDialog parserConfigDialog = new ParserConfigDialog(e.getProject(), parserConfig);
         if (parserConfigDialog.showAndGet()) {
             try {
-                for (String path : dataSource.getAllData().values()) {
-                    parserConfig.addFilePath(path);
+                for (Code code : codeCollection) {
+                    parserConfig.addCode(code);
                 }
                 parserConfig = parserConfigDialog.getParserConfig();
-            }catch (NullPointerException nullPointerException){
+            } catch (NullPointerException nullPointerException) {
                 Notifications.Bus.notify(new Notification("plantuml-parser", "", nullPointerException.getMessage(), NotificationType.ERROR), e.getProject());
                 throw nullPointerException;
             }
@@ -133,8 +134,8 @@ public class ParserProgramAction extends AnAction {
         protected @Nullable ValidationInfo doValidate() {
             try {
                 parserConfigPanel.getFilePath();
-            }catch (NullPointerException nullPointerException){
-                return new ValidationInfo(nullPointerException.getMessage(),null);
+            } catch (NullPointerException nullPointerException) {
+                return new ValidationInfo(nullPointerException.getMessage(), null);
             }
             return null;
         }
