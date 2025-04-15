@@ -100,3 +100,5 @@ class com.shuzijun.plantumlparser.core.ParserProgram {
 com.github.javaparser.ast.visitor.VoidVisitorAdapter <|-- com.shuzijun.plantumlparser.core.ClassVoidVisitor
 @enduml
 ```
+
+添加新功能,可以将jar包中的class文件进行解析

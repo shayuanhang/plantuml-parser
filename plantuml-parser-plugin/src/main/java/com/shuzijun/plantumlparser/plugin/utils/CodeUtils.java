@@ -4,6 +4,8 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import com.shuzijun.plantumlparser.core.Code;
 import com.shuzijun.plantumlparser.core.FileCode;
+import com.shuzijun.plantumlparser.plugin.utils.impl.VfCode;
+import org.apache.commons.lang3.StringUtils;
 import org.benf.cfr.reader.api.CfrDriver;
 import org.benf.cfr.reader.api.ClassFileSource;
 import org.benf.cfr.reader.api.OutputSinkFactory;
@@ -19,34 +21,23 @@ import java.util.stream.Collectors;
 public abstract class CodeUtils {
     public static List<Code> parse(VirtualFile[] virtualFiles) {
         List<Code> codeList = new ArrayList<>();
-        List<VirtualFile> classVfs = new ArrayList<>();
-        // 如果是JAVA源码，直接加入addPaths
+        List<VirtualFile> allVirtualFileList = new ArrayList<>();
         for (VirtualFile virtualFile : virtualFiles) {
-            File file = new File(virtualFile.getPath());
-            if (file.exists()) {
-                if (file.isDirectory()) {
-                    for (VirtualFile child : virtualFile.getChildren()) {
-                        if (!child.isDirectory() && child.getPath().endsWith(".java")) {
-                            codeList.add(new FileCode(child.getPath()));
-                        }
-                    }
-                } else {
-                    if (virtualFile.getPath().endsWith(".java")) {
-                        codeList.add(new FileCode(virtualFile.getPath()));
-                    }
-                }
-            } else {
-                // vfs
-                if (virtualFile.isDirectory()) {
-                    List<VirtualFile> collect = Arrays.stream(virtualFile.getChildren()).filter(vf -> !vf.isDirectory() && vf.getPath().endsWith(".class")).collect(Collectors.toList());
-                    classVfs.addAll(collect);
-                } else if (virtualFile.getPath().endsWith(".class")) {
-                    classVfs.add(virtualFile);
-                }
+            if (virtualFile.isDirectory()) {
+                List<VirtualFile> fileTmpList = Arrays.stream(virtualFile.getChildren()).filter(vf -> !vf.isDirectory()).collect(Collectors.toList());
+                allVirtualFileList.addAll(fileTmpList);
+            }else {
+                allVirtualFileList.add(virtualFile);
             }
         }
+        List<VirtualFile> srcVirtualFileList=allVirtualFileList.stream().filter(vf-> StringUtils.endsWithAny(vf.getUrl(),".java",".kt")).collect(Collectors.toList());
+        List<VirtualFile> classVirtualFileList=allVirtualFileList.stream().filter(vf-> StringUtils.endsWithAny(vf.getUrl(),".class")).collect(Collectors.toList());
+
+        srcVirtualFileList.forEach(vf->{
+            codeList.add(new VfCode(vf));
+        });
         // 将class的VirtualFile 解析出Code
-        codeList.addAll(parseCodeFromClassVfs(classVfs));
+        codeList.addAll(parseCodeFromClassVfs(classVirtualFileList));
         if (codeList.isEmpty()) {
             throw new RuntimeException(PropertiesUtils.getInfo("select.empty"));
         }

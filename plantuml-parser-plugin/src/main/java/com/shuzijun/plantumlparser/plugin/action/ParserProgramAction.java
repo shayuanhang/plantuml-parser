@@ -6,7 +6,6 @@ import com.intellij.notification.NotificationType;
 import com.intellij.notification.Notifications;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
@@ -17,8 +16,6 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.shuzijun.plantumlparser.core.Code;
 import com.shuzijun.plantumlparser.core.ParserConfig;
 import com.shuzijun.plantumlparser.core.ParserProgram;
-import com.shuzijun.plantumlparser.plugin.utils.CodeUtils;
-import com.shuzijun.plantumlparser.plugin.utils.MTAUtils;
 import com.shuzijun.plantumlparser.plugin.utils.PropertiesUtils;
 import com.shuzijun.plantumlparser.plugin.utils.Store;
 import com.shuzijun.plantumlparser.plugin.window.ParserConfigPanel;
@@ -30,7 +27,6 @@ import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * 解析动作
@@ -40,16 +36,7 @@ import java.util.List;
 public class ParserProgramAction extends AnAction {
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
-        MTAUtils.click(e.getActionManager().getId(this));
         ParserConfig parserConfig = new ParserConfig();
-        VirtualFile[] virtualFiles = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
-        try {
-            List<Code> codeList = CodeUtils.parse(virtualFiles);
-            Store.getInstance().addAll(codeList);
-        } catch (Exception exception) {
-            Notifications.Bus.notify(new Notification("plantuml-parser", "", exception.getMessage(), NotificationType.WARNING), e.getProject());
-        }
-
         Collection<Code> codeCollection = Store.getInstance().getAllData();
         if (codeCollection.isEmpty()) {
             Notifications.Bus.notify(new Notification("plantuml-parser", "", PropertiesUtils.getInfo("select.empty"), NotificationType.WARNING), e.getProject());
