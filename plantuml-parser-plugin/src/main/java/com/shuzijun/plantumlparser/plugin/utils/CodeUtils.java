@@ -1,9 +1,10 @@
 package com.shuzijun.plantumlparser.plugin.utils;
 
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import com.shuzijun.plantumlparser.core.Code;
-import com.shuzijun.plantumlparser.core.FileCode;
+import com.shuzijun.plantumlparser.plugin.action.ParserProgramAction;
 import com.shuzijun.plantumlparser.plugin.utils.impl.VfCode;
 import org.apache.commons.lang3.StringUtils;
 import org.benf.cfr.reader.api.CfrDriver;
@@ -12,13 +13,41 @@ import org.benf.cfr.reader.api.OutputSinkFactory;
 import org.benf.cfr.reader.api.SinkReturns;
 import org.benf.cfr.reader.bytecode.analysis.parse.utils.Pair;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public abstract class CodeUtils {
+    private static final Logger LOG = Logger.getInstance(CodeUtils.class);
+    /**
+     * 预先检查并返回有问题的Code
+     * @param codeCollection
+     * @return
+     */
+    public static Collection<Code> preCheck(Collection<Code> codeCollection) {
+        List<Code> retList = new ArrayList<>();
+        FQNResolver fqnResolver = FQNResolver.getInstance();
+        for (Code code : codeCollection) {
+            if (fqnResolver.getFQN(code) == null) {
+                retList.add(code);
+            }
+        }
+        return retList;
+
+    }
+
+    public static void errorLogCodes(Collection<Code> codeCollection) {
+        LOG.error("============================================error codes start============================================");
+        for (Code code : codeCollection) {
+            LOG.error("============================================"+code.getName()+"============================================");
+            LOG.error("code:");
+            LOG.error(code.getCode());
+            LOG.error("\n");
+        }
+        LOG.error("============================================error codes end  ============================================");
+    }
+
     public static List<Code> parse(VirtualFile[] virtualFiles) {
         List<Code> codeList = new ArrayList<>();
         List<VirtualFile> allVirtualFileList = new ArrayList<>();
@@ -26,14 +55,14 @@ public abstract class CodeUtils {
             if (virtualFile.isDirectory()) {
                 List<VirtualFile> fileTmpList = Arrays.stream(virtualFile.getChildren()).filter(vf -> !vf.isDirectory()).collect(Collectors.toList());
                 allVirtualFileList.addAll(fileTmpList);
-            }else {
+            } else {
                 allVirtualFileList.add(virtualFile);
             }
         }
-        List<VirtualFile> srcVirtualFileList=allVirtualFileList.stream().filter(vf-> StringUtils.endsWithAny(vf.getUrl(),".java",".kt")).collect(Collectors.toList());
-        List<VirtualFile> classVirtualFileList=allVirtualFileList.stream().filter(vf-> StringUtils.endsWithAny(vf.getUrl(),".class")).collect(Collectors.toList());
+        List<VirtualFile> srcVirtualFileList = allVirtualFileList.stream().filter(vf -> StringUtils.endsWithAny(vf.getUrl(), ".java", ".kt")).collect(Collectors.toList());
+        List<VirtualFile> classVirtualFileList = allVirtualFileList.stream().filter(vf -> StringUtils.endsWithAny(vf.getUrl(), ".class")).collect(Collectors.toList());
 
-        srcVirtualFileList.forEach(vf->{
+        srcVirtualFileList.forEach(vf -> {
             codeList.add(new VfCode(vf));
         });
         // 将class的VirtualFile 解析出Code
@@ -105,7 +134,7 @@ public abstract class CodeUtils {
         /**
          * 用于处理匿名类，将frc自动查找的匿名类的path，遇敌到时VirtualFile的url
          */
-        private Map<String ,String> anonymousClassUrlMap = new HashMap<>();
+        private Map<String, String> anonymousClassUrlMap = new HashMap<>();
 
         public VfClassFileSource(Map<String, String> anonymousClassUrlMap) {
             this.anonymousClassUrlMap.putAll(anonymousClassUrlMap);
@@ -133,7 +162,7 @@ public abstract class CodeUtils {
             }
             VirtualFile fileByUrl = VirtualFileManager.getInstance().findFileByUrl(path);
             if (fileByUrl == null) {
-                throw new IOException ("not find [" + path + "] vf");
+                throw new IOException("not find [" + path + "] vf");
             }
             return Pair.make(fileByUrl.contentsToByteArray(), path);
         }

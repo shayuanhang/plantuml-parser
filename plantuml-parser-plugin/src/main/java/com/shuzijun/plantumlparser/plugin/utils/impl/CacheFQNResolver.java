@@ -4,14 +4,16 @@ import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.TypeDeclaration;
+import com.intellij.openapi.diagnostic.Logger;
 import com.shuzijun.plantumlparser.core.Code;
+import com.shuzijun.plantumlparser.plugin.utils.CodeUtils;
 import com.shuzijun.plantumlparser.plugin.utils.FQNResolver;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class CacheFQNResolver implements FQNResolver {
-
+    private static final Logger LOG = Logger.getInstance(CacheFQNResolver.class);
     Map<Code, String> cacheMap = new HashMap<Code, String>();
     @Override
 
@@ -22,7 +24,8 @@ public class CacheFQNResolver implements FQNResolver {
                try {
                    compilationUnit = StaticJavaParser.parse(code.getCode());
                } catch (Exception e) {
-                   throw new RuntimeException(e);
+                   LOG.error(e);
+                   return null;
                }
                String packagePre = compilationUnit.getPackageDeclaration().isPresent() ? compilationUnit.getPackageDeclaration().get().getName().toString() + "." : "";
                NodeList<TypeDeclaration<?>> types = compilationUnit.getTypes();

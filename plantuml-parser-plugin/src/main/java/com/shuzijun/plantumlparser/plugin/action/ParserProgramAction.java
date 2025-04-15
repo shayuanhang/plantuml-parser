@@ -6,6 +6,7 @@ import com.intellij.notification.NotificationType;
 import com.intellij.notification.Notifications;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
@@ -16,6 +17,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.shuzijun.plantumlparser.core.Code;
 import com.shuzijun.plantumlparser.core.ParserConfig;
 import com.shuzijun.plantumlparser.core.ParserProgram;
+import com.shuzijun.plantumlparser.plugin.utils.CodeUtils;
 import com.shuzijun.plantumlparser.plugin.utils.PropertiesUtils;
 import com.shuzijun.plantumlparser.plugin.utils.Store;
 import com.shuzijun.plantumlparser.plugin.window.ParserConfigPanel;
@@ -25,8 +27,8 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 /**
  * 解析动作
@@ -34,40 +36,44 @@ import java.util.Collection;
  * @author shuzijun
  */
 public class ParserProgramAction extends AnAction {
+    private static final Logger LOG = Logger.getInstance(ParserProgramAction.class);
+
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
-        ParserConfig parserConfig = new ParserConfig();
-        Collection<Code> codeCollection = Store.getInstance().getAllData();
-        if (codeCollection.isEmpty()) {
-            Notifications.Bus.notify(new Notification("plantuml-parser", "", PropertiesUtils.getInfo("select.empty"), NotificationType.WARNING), e.getProject());
-            return;
-        }
-
-        ParserConfigDialog parserConfigDialog = new ParserConfigDialog(e.getProject(), parserConfig);
-        if (parserConfigDialog.showAndGet()) {
-            try {
+        try {
+            ParserConfig parserConfig = new ParserConfig();
+            Collection<Code> codeCollection = Store.getInstance().getAllData();
+            Collection<Code> failCodes = CodeUtils.preCheck(codeCollection);
+            if (failCodes.size() > 0) {
+                String failCodeNameStr = failCodes.stream().map(code -> code.getName()).collect(Collectors.joining(","));
+                Notifications.Bus.notify(new Notification("plantuml-parser", "","文件有误: "+failCodeNameStr, NotificationType.WARNING), e.getProject());
+                failCodes.forEach(Store.getInstance()::delete);
+                codeCollection.removeAll(failCodes);
+                CodeUtils.errorLogCodes(failCodes);
+            }
+            if (codeCollection.isEmpty()) {
+                Notifications.Bus.notify(new Notification("plantuml-parser", "", PropertiesUtils.getInfo("select.empty"), NotificationType.WARNING), e.getProject());
+                return;
+            }
+            ParserConfigDialog parserConfigDialog = new ParserConfigDialog(e.getProject(), parserConfig);
+            if (parserConfigDialog.showAndGet()) {
                 for (Code code : codeCollection) {
                     parserConfig.addCode(code);
                 }
                 parserConfig = parserConfigDialog.getParserConfig();
-            } catch (NullPointerException nullPointerException) {
-                Notifications.Bus.notify(new Notification("plantuml-parser", "", nullPointerException.getMessage(), NotificationType.ERROR), e.getProject());
-                throw nullPointerException;
-            }
-            ParserProgram parserProgram = new ParserProgram(parserConfig);
-            try {
+                ParserProgram parserProgram = new ParserProgram(parserConfig);
                 parserProgram.execute();
                 Notifications.Bus.notify(new Notification("plantuml-parser", "", PropertiesUtils.getInfo("success", parserConfig.getOutFilePath()), NotificationType.INFORMATION), e.getProject());
                 VirtualFile vf = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(new File(parserConfig.getOutFilePath()));
                 OpenFileDescriptor descriptor = new OpenFileDescriptor(e.getProject(), vf);
                 FileEditorManager.getInstance(e.getProject()).openTextEditor(descriptor, false);
-            } catch (NullPointerException n) {
-                Notifications.Bus.notify(new Notification("plantuml-parser", "", n.getMessage(), NotificationType.WARNING), e.getProject());
-            } catch (IOException ioException) {
-                Notifications.Bus.notify(new Notification("plantuml-parser", "", PropertiesUtils.getInfo("io.exception", ioException.getMessage()), NotificationType.WARNING), e.getProject());
             }
+        } catch (Exception exception) {
+            // 清除数据，防止无法打开解析页面
+            Store.getInstance().clear();
+            LOG.error(exception);
+            Notifications.Bus.notify(new Notification("plantuml-parser", "", exception.getMessage(), NotificationType.WARNING), e.getProject());
         }
-
     }
 
     class ParserConfigDialog extends DialogWrapper {

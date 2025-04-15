@@ -9,7 +9,7 @@ public interface FQNResolver {
     }
 
     /**
-     * 如果返回null，代表非class,可能是package-info
+     * 如果返回null，代表非class,可能是package-info ,或者源码文件有误
      * @param code
      * @return
      */
