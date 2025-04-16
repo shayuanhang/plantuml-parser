@@ -101,4 +101,6 @@ com.github.javaparser.ast.visitor.VoidVisitorAdapter <|-- com.shuzijun.plantumlp
 @enduml
 ```
 
+
 添加新功能,可以将jar包中的class文件进行解析
+- javaparser升级到时3.26.4 支持java21源码

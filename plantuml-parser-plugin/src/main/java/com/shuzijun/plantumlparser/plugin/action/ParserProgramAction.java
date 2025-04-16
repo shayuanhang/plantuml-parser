@@ -1,5 +1,6 @@
 package com.shuzijun.plantumlparser.plugin.action;
 
+import com.github.javaparser.ParserConfiguration;
 import com.intellij.ide.BrowserUtil;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
@@ -137,7 +138,7 @@ public class ParserProgramAction extends AnAction {
             parserConfig.setOutFilePath(parserConfigPanel.getFilePath());
             parserConfigPanel.getField().forEach(s -> parserConfig.addFieldModifier(s));
             parserConfigPanel.getMethod().forEach(s -> parserConfig.addMethodModifier(s));
-            parserConfig.setLanguageLevel(parserConfigPanel.getLanguageLevel());
+            parserConfig.setLanguageLevel(ParserConfiguration.LanguageLevel.BLEEDING_EDGE);
             parserConfig.setShowPackage(parserConfigPanel.getShowPackage());
             parserConfig.setShowConstructors(parserConfigPanel.getConstructors());
             parserConfig.setShowComment(parserConfigPanel.getShowComment());

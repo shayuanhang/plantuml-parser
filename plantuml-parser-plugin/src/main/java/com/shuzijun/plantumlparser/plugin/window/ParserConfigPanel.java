@@ -1,6 +1,5 @@
 package com.shuzijun.plantumlparser.plugin.window;
 
-import com.github.javaparser.ParserConfiguration;
 import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.fileChooser.FileChooserFactory;
 import com.intellij.openapi.fileChooser.PathChooserDialog;
@@ -43,7 +42,6 @@ public class ParserConfigPanel {
     private JCheckBox methodProtectedCheckBox;
     private JCheckBox methodDefaultCheckBox;
     private JCheckBox methodPublicCheckBox;
-    private JComboBox languageLevelComboBox;
     private JCheckBox showPackageCheckBox;
     private JCheckBox constructorsCheckBox;
     private JButton chooseFilePath;
@@ -64,11 +62,6 @@ public class ParserConfigPanel {
                 filePath.setText(fileDirectory.getText() + File.separator + fileName.getText() + ".puml");
             }
         });
-        for (ParserConfiguration.LanguageLevel value : ParserConfiguration.LanguageLevel.values()) {
-            languageLevelComboBox.addItem(value);
-        }
-        languageLevelComboBox.setSelectedItem(ParserConfiguration.LanguageLevel.JAVA_8);
-
         FileChooserDescriptor fileChooserDescriptor = new FileChooserDescriptor(
                 false, true, false,
                 false, false, false);
@@ -76,10 +69,10 @@ public class ParserConfigPanel {
         chooseFilePath.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                pathChooserDialog = FileChooserFactory.getInstance().createPathChooser(fileChooserDescriptor,project,jpanel);
+                pathChooserDialog = FileChooserFactory.getInstance().createPathChooser(fileChooserDescriptor, project, jpanel);
 
                 pathChooserDialog.choose(project.getProjectFile(), choose -> {
-                    if(choose.size() > 0){
+                    if (choose.size() > 0) {
                         VirtualFile file = choose.get(0);
                         fileDirectory.setText(file.getPath());
                         filePath.setText(fileDirectory.getText() + File.separator + fileName.getText() + ".puml");
@@ -92,10 +85,10 @@ public class ParserConfigPanel {
             public void mouseClicked(MouseEvent e) {
                 Object selectedValue = classNameList.getSelectedValue();
                 Store<Code> store = Store.getInstance();
-                Collection<Code> codeCollection =  store.getAllData();
+                Collection<Code> codeCollection = store.getAllData();
                 FQNResolver fqnResolver = FQNResolver.getInstance();
                 for (Code code : codeCollection) {
-                    if (StringUtils.equals(fqnResolver.getFQN(code),selectedValue.toString())) {
+                    if (StringUtils.equals(fqnResolver.getFQN(code), selectedValue.toString())) {
                         store.delete(code);
                         MyListModel model = (MyListModel) classNameList.getModel();
                         model.flush();
@@ -166,9 +159,6 @@ public class ParserConfigPanel {
         return filePath.getText();
     }
 
-    public ParserConfiguration.LanguageLevel getLanguageLevel() {
-        return (ParserConfiguration.LanguageLevel) languageLevelComboBox.getSelectedItem();
-    }
 
     public boolean getShowPackage() {
         return showPackageCheckBox.isSelected();
@@ -182,7 +172,7 @@ public class ParserConfigPanel {
         return commentCheckBox.isSelected();
     }
 
-    public List<String> getExcludeClass(){
+    public List<String> getExcludeClass() {
         if (excludeClass.getText() == null || excludeClass.getText().trim().length() == 0) {
             return new ArrayList<>();
         }
@@ -192,22 +182,29 @@ public class ParserConfigPanel {
     private void createUIComponents() {
         // TODO: place custom component creation code here
         ListModel<String> bigData = new MyListModel();
-        this.classNameList= new JList(bigData);
+        this.classNameList = new JList(bigData);
     }
 
     class MyListModel extends AbstractListModel {
 
         List<String> keys = new ArrayList<>();
+
         {
             flush();
         }
-        public int getSize() { return keys.size(); }
-        public String getElementAt(int index) { return keys.get(index); }
+
+        public int getSize() {
+            return keys.size();
+        }
+
+        public String getElementAt(int index) {
+            return keys.get(index);
+        }
 
         public void flush() {
             Store<Code> store = Store.getInstance();
             FQNResolver fqnResolver = FQNResolver.getInstance();
-            List<String> collect = store.getAllData().stream().map(code-> fqnResolver.getFQN(code)).filter(fqn->StringUtils.isNotBlank(fqn)).collect(Collectors.toList());
+            List<String> collect = store.getAllData().stream().map(code -> fqnResolver.getFQN(code)).filter(fqn -> StringUtils.isNotBlank(fqn)).collect(Collectors.toList());
             keys.clear();
             keys.addAll(collect);
         }
